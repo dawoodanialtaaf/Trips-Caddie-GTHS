@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { TripRecap, SmtpConfig, QuoteRequestLog, UserMetadata } from '../types';
 import { fetchUserMetadata } from '../services/trackingService';
-import { Mail, X, ExternalLink, Loader2, Info, CheckCircle2 } from 'lucide-react';
+import { Mail, X, ExternalLink, Info, CheckCircle2, Copy, ArrowRight, Check, AlertCircle } from 'lucide-react';
 
 interface QuoteGeneratorProps {
   recap: TripRecap;
@@ -13,18 +13,21 @@ interface QuoteGeneratorProps {
 }
 
 const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ recap, onClose, recipients, onQuoteSent }) => {
-  const [constraints, setConstraints] = useState('');
+  // Flow State: details -> method -> success
+  const [viewState, setViewState] = useState<'details' | 'method' | 'success'>('details');
   
   // Customer Details State
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerCompany, setCustomerCompany] = useState('');
-
-  const [showOptions, setShowOptions] = useState(false);
+  const [constraints, setConstraints] = useState('');
   
   // Metadata Tracking
   const [metadata, setMetadata] = useState<UserMetadata | null>(null);
+
+  // Copy Feedback State
+  const [copiedField, setCopiedField] = useState<'subject' | 'body' | null>(null);
 
   useEffect(() => {
     // Fetch tracking data silently when modal opens
@@ -76,7 +79,7 @@ Ref ID: ${recap.id} | Source: The Caddie Archive`;
       return `Trip Caddie Quote Request: ${recap.groupName} - ${customerName}`;
   };
 
-  const handleSendAction = async (type: 'default' | 'gmail') => {
+  const handleSendAction = (type: 'default' | 'gmail') => {
     // 1. Log the Request in Admin Dashboard
     const logEntry: QuoteRequestLog = {
         id: Date.now().toString(),
@@ -89,6 +92,7 @@ Ref ID: ${recap.id} | Source: The Caddie Archive`;
         },
         tripId: recap.id,
         tripName: recap.groupName,
+        tripSnapshot: recap,
         constraints: constraints,
         metadata: metadata || {
             ip: 'Unknown', city: 'Unknown', region: 'Unknown', country: 'Unknown', timezone: 'Unknown', userAgent: navigator.userAgent, deviceType: 'Unknown', landingPage: window.location.href
@@ -97,24 +101,39 @@ Ref ID: ${recap.id} | Source: The Caddie Archive`;
     onQuoteSent(logEntry);
 
     const recipientsStr = recipients.join(',');
-    const subject = encodeURIComponent(getSubject());
-    const body = encodeURIComponent(getPlainTextBody());
+    const subject = getSubject();
+    const body = getPlainTextBody();
+    
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(body);
 
     // 2. Open Email Client with BODY included
+    // Note: mailto links have a length limit (often 2000 chars). If it fails, the Success screen allows copying.
     if (type === 'default') {
-        window.location.href = `mailto:${recipientsStr}?subject=${subject}&body=${body}`;
+        window.location.href = `mailto:${recipientsStr}?subject=${encodedSubject}&body=${encodedBody}`;
     } else {
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipientsStr}&su=${subject}&body=${body}`;
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipientsStr}&su=${encodedSubject}&body=${encodedBody}`;
         window.open(gmailUrl, '_blank');
     }
+
+    // 3. Move to Success View
+    setViewState('success');
+  };
+
+  const handleCopy = (text: string, field: 'subject' | 'body') => {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
   };
 
   const isFormValid = customerName && customerEmail && customerPhone;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <div>
                     <h3 className="font-bold text-slate-800">Custom Quote</h3>
                     <p className="text-xs text-slate-500">Send a structured request to the admin team.</p>
@@ -122,9 +141,10 @@ Ref ID: ${recap.id} | Source: The Caddie Archive`;
                 <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
             </div>
 
-            <div className="p-6">
-                {!showOptions ? (
-                    <div className="space-y-4">
+            <div className="p-6 overflow-y-auto">
+                {/* VIEW 1: DETAILS FORM */}
+                {viewState === 'details' && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                         {/* Customer Details Form */}
                         <div className="space-y-3">
                              <div className="grid grid-cols-1 gap-3">
@@ -196,25 +216,26 @@ Ref ID: ${recap.id} | Source: The Caddie Archive`;
                         </div>
 
                         <button 
-                            onClick={() => setShowOptions(true)}
+                            onClick={() => setViewState('method')}
                             disabled={!isFormValid}
                             className={`w-full py-4 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 mt-2 ${isFormValid ? 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200' : 'bg-slate-300 cursor-not-allowed'}`}
                         >
-                            Next: Select Email App
+                            Next: Select Email App <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
-                ) : (
-                    <div className="space-y-6 py-2 animate-in fade-in">
+                )}
+
+                {/* VIEW 2: METHOD SELECTION */}
+                {viewState === 'method' && (
+                    <div className="space-y-6 py-2 animate-in fade-in slide-in-from-right-4 duration-300">
                         
-                        {/* Tip Box */}
                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-3 items-start">
                             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                             <div>
                                 <h4 className="font-bold text-slate-800 text-sm mb-1">Ready to Review & Send</h4>
                                 <p className="text-xs text-slate-600 leading-relaxed">
-                                    We have generated a complete quote request for you. 
-                                    Click below to open your preferred email app with the message <b>pre-filled</b>. 
-                                    Just review and hit send!
+                                    We have generated a complete quote request. 
+                                    Click below to open your preferred email app with the message <b>pre-filled</b>.
                                 </p>
                             </div>
                         </div>
@@ -238,10 +259,60 @@ Ref ID: ${recap.id} | Source: The Caddie Archive`;
                         </div>
 
                         <button 
-                            onClick={() => setShowOptions(false)}
+                            onClick={() => setViewState('details')}
                             className="w-full text-xs text-slate-400 hover:text-slate-600 underline text-center"
                         >
                             Back to Edit
+                        </button>
+                    </div>
+                )}
+
+                {/* VIEW 3: SUCCESS & FALLBACK */}
+                {viewState === 'success' && (
+                    <div className="space-y-6 py-2 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
+                        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                             <Check className="w-8 h-8" />
+                        </div>
+                        
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800">Email Draft Opened</h3>
+                            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                Please check your email client. Review the drafted message and hit send!
+                            </p>
+                        </div>
+
+                        {/* Fallback Section */}
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-left">
+                            <div className="flex items-start gap-2 mb-3">
+                                <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5" />
+                                <p className="text-xs text-slate-600">
+                                    <strong>Did nothing happen?</strong> Your browser might block automatic emails or the text was too long. You can copy the info manually below:
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3">
+                                <button 
+                                    onClick={() => handleCopy(getSubject(), 'subject')}
+                                    className="w-full flex justify-between items-center bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-700 p-3 rounded-lg text-xs font-medium transition-all group"
+                                >
+                                    <span>1. Copy Subject Line</span>
+                                    {copiedField === 'subject' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500" />}
+                                </button>
+                                <button 
+                                    onClick={() => handleCopy(getPlainTextBody(), 'body')}
+                                    className="w-full flex justify-between items-center bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-700 p-3 rounded-lg text-xs font-medium transition-all group"
+                                >
+                                    <span>2. Copy Email Body</span>
+                                    {copiedField === 'body' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={onClose}
+                            className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors"
+                        >
+                            Done / Close Window
                         </button>
                     </div>
                 )}

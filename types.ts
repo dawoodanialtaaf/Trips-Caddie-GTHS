@@ -105,5 +105,13 @@ export interface QuoteRequestLog {
   tripId: string;
   tripName: string;
   constraints: string;
+  tripSnapshot?: TripRecap; // Snapshot of the full trip details at time of quote
   metadata: UserMetadata;
+}
+
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string; // ISO string
 }

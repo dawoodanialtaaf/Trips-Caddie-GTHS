@@ -20,6 +20,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel }) => {
   const [year, setYear] = useState(2024);
   const [courses, setCourses] = useState<string>('');
   const [lodging, setLodging] = useState('');
+  const [transportType, setTransportType] = useState('');
   const [pricePerPerson, setPricePerPerson] = useState<number>(0);
   const [vibe, setVibe] = useState('Value');
   const [synopsis, setSynopsis] = useState('');
@@ -48,7 +49,11 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel }) => {
       
       // Handle new detailed fields
       if (data.dailyItinerary) setDailyItinerary(data.dailyItinerary);
-      if (data.logistics) setLogistics(data.logistics);
+      if (data.logistics) {
+          setLogistics(data.logistics);
+          // specific fields extracted for editing
+          setTransportType(data.logistics.transportType || '');
+      }
 
     } catch (e) {
       alert("Failed to parse notes using Gemini. Please check API Key.");
@@ -75,10 +80,10 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel }) => {
       whyItWorked,
       highlights: highlights.split('\n').filter(Boolean),
       dailyItinerary: dailyItinerary,
-      logistics: logistics || {
-          transportType: 'Unknown',
-          passengerCount: groupSize,
-          specialRequests: []
+      logistics: {
+          transportType: transportType || 'Unknown',
+          passengerCount: groupSize, // Sync with the main pax input
+          specialRequests: logistics?.specialRequests || []
       }
     };
     onSave(newTrip);
@@ -98,7 +103,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel }) => {
         {/* Left Column: AI Input */}
         <div className="p-6 bg-emerald-50/50 border-r border-slate-100 flex flex-col h-full">
             <label className="block text-sm font-semibold text-emerald-900 mb-2">
-                Step 1: Paste Manifest / Notes
+                Step 1: Paste Manifest / Notes / Emails
             </label>
             <p className="text-xs text-emerald-700 mb-4">
                 Paste the full manifest including bus schedules and special requests. Personal contact info will be ignored.
@@ -139,14 +144,26 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel }) => {
                         <input type="text" value={lodging} onChange={e => setLodging(e.target.value)} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
                     </div>
                     <div>
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Transport Type</label>
+                        <input type="text" value={transportType} onChange={e => setTransportType(e.target.value)} placeholder="e.g. 56 Pax Coach" className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
+                    </div>
+                    <div>
                         <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Price Per Person ($)</label>
                         <input type="number" value={pricePerPerson} onChange={e => setPricePerPerson(parseInt(e.target.value))} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
                     </div>
-                    <div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                     <div>
                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Vibe</label>
                          <select value={vibe} onChange={e => setVibe(e.target.value)} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900">
                             {['Budget', 'Value', 'Premium', 'Bucket List', 'Bachelor Party', 'Corporate'].map(v => <option key={v} value={v}>{v}</option>)}
                          </select>
+                    </div>
+                    {/* Placeholder for future expansion */}
+                    <div className="col-span-2">
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Courses / Activities (Comma Separated)</label>
+                        <input type="text" value={courses} onChange={e => setCourses(e.target.value)} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
                     </div>
                 </div>
 
@@ -158,7 +175,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel }) => {
                         </h3>
                         <div className="grid grid-cols-2 gap-4 text-xs text-slate-600">
                             <div>
-                                <span className="font-bold">Transport:</span> {logistics.transportType}
+                                <span className="font-bold">Detected Transport:</span> {logistics.transportType}
                             </div>
                             <div className="col-span-2">
                                 <span className="font-bold">Itinerary:</span> {dailyItinerary.length} days found

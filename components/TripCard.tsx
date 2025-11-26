@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TripRecap } from '../types';
 import { COURSES, LODGING } from '../constants';
 import { fetchWeather } from '../services/weatherService';
-import { Calendar, MapPin, Bus, ChevronDown, ChevronUp, Star, Zap, Lightbulb, Trash2, Share2, ArrowUpRight, Trophy, Globe, CloudSun, Sun, Cloud, CloudRain, Snowflake } from 'lucide-react';
+import { Calendar, MapPin, Bus, ChevronDown, ChevronUp, Zap, Lightbulb, Trash2, Share2, ArrowUpRight, Trophy, Globe, Sun, Cloud, CloudRain, Snowflake, CloudSun, Star } from 'lucide-react';
 
 interface TripCardProps {
   trip: TripRecap;
@@ -16,6 +16,7 @@ interface TripCardProps {
 const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare, onDelete, isAdmin = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [imgSrc, setImgSrc] = useState<string>('');
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [weather, setWeather] = useState<{ temp: number; condition: string; code: number } | null>(null);
 
   const badgeColors: Record<string, string> = {
@@ -35,41 +36,64 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
     const seed = trip.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
     // Image Collections (High Quality Unsplash)
+    // Expanded for variety in infinite scroll
     const collections: Record<string, string[]> = {
         bus: [
             "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800",
             "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=800",
-            "https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?auto=format&fit=crop&q=80&w=800"
+            "https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1494515843206-f3117d3f51b7?auto=format&fit=crop&q=80&w=800"
         ],
         tahoe: [
             "https://images.unsplash.com/photo-1552945432-a279769cbc2e?auto=format&fit=crop&q=80&w=800",
             "https://images.unsplash.com/photo-1563299796-b729d0af54a5?auto=format&fit=crop&q=80&w=800",
-            "https://images.unsplash.com/photo-1548232979-6c557ee14752?auto=format&fit=crop&q=80&w=800"
+            "https://images.unsplash.com/photo-1548232979-6c557ee14752?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1573059882283-433b9b472266?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1623880846882-9657099f6974?auto=format&fit=crop&q=80&w=800"
         ],
         mountain: [
             "https://images.unsplash.com/photo-1449156493391-d2cfa28e468b?auto=format&fit=crop&q=80&w=800",
             "https://images.unsplash.com/photo-1605118287313-2d259e83897c?auto=format&fit=crop&q=80&w=800",
-            "https://images.unsplash.com/photo-1519331379826-f947873e307d?auto=format&fit=crop&q=80&w=800"
+            "https://images.unsplash.com/photo-1519331379826-f947873e307d?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&q=80&w=800"
+        ],
+        winter: [
+            "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&q=80&w=800",
+            "https://images.unsplash.com/photo-1551524559-8af4e6624178?auto=format&fit=crop&q=80&w=800"
         ],
         reno_fun: [
              "https://images.unsplash.com/photo-1596726672322-25e1a38c2054?auto=format&fit=crop&q=80&w=800",
              "https://images.unsplash.com/photo-1514525253440-b39345208668?auto=format&fit=crop&q=80&w=800",
-             "https://images.unsplash.com/photo-1583908064973-19614777d0a1?auto=format&fit=crop&q=80&w=800" // Neon
+             "https://images.unsplash.com/photo-1583908064973-19614777d0a1?auto=format&fit=crop&q=80&w=800", // Neon
+             "https://images.unsplash.com/photo-1558280417-1335b2a36b9e?auto=format&fit=crop&q=80&w=800"
         ],
         reno_city: [
              "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?auto=format&fit=crop&q=80&w=800",
              "https://images.unsplash.com/photo-1549495577-c37632684563?auto=format&fit=crop&q=80&w=800",
-             "https://images.unsplash.com/photo-1559437225-b1d61882d03a?auto=format&fit=crop&q=80&w=800"
+             "https://images.unsplash.com/photo-1559437225-b1d61882d03a?auto=format&fit=crop&q=80&w=800",
+             "https://images.unsplash.com/photo-1629864222045-8164082dc572?auto=format&fit=crop&q=80&w=800"
         ],
         coastal: [
              "https://images.unsplash.com/photo-1533241249764-167882dc8104?auto=format&fit=crop&q=80&w=800",
-             "https://images.unsplash.com/photo-1473442240418-452f03b7ae40?auto=format&fit=crop&q=80&w=800"
+             "https://images.unsplash.com/photo-1473442240418-452f03b7ae40?auto=format&fit=crop&q=80&w=800",
+             "https://images.unsplash.com/photo-1534008778619-a939268f7d98?auto=format&fit=crop&q=80&w=800"
         ],
         golf: [
              "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?auto=format&fit=crop&q=80&w=800",
              "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&q=80&w=800",
              "https://images.unsplash.com/photo-1593111774240-d529f12db464?auto=format&fit=crop&q=80&w=800",
-             "https://images.unsplash.com/photo-1622396345636-65b1d5754593?auto=format&fit=crop&q=80&w=800"
+             "https://images.unsplash.com/photo-1622396345636-65b1d5754593?auto=format&fit=crop&q=80&w=800",
+             "https://images.unsplash.com/photo-1628488321434-583eb4233075?auto=format&fit=crop&q=80&w=800",
+             "https://images.unsplash.com/photo-1592919505780-30395071e229?auto=format&fit=crop&q=80&w=800"
+        ],
+        desert: [
+             "https://images.unsplash.com/photo-1489436969537-cf0c1dc49c90?auto=format&fit=crop&q=80&w=800",
+             "https://images.unsplash.com/photo-1549887534-1541e9326642?auto=format&fit=crop&q=80&w=800"
+        ],
+        luxury: [
+             "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&q=80&w=800",
+             "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=800"
         ]
     };
 
@@ -77,6 +101,8 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
     let category = 'golf';
     if (trip.rounds === 0 || text.includes('charter') || text.includes('bus') || text.includes('school') || text.includes('team') || text.includes('transport') || text.includes('airport')) {
         category = 'bus';
+    } else if (text.includes('winter') || trip.month.includes('Dec') || trip.month.includes('Jan') || trip.month.includes('Feb')) {
+        category = 'winter';
     } else if (text.includes('tahoe') || text.includes('edgewood') || text.includes('hyatt') || text.includes('beach')) {
         category = 'tahoe';
     } else if (text.includes('graeagle') || text.includes('truckee') || text.includes('cabin') || text.includes('pines') || text.includes('nakoma')) {
@@ -85,8 +111,12 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
         category = 'coastal';
     } else if (trip.vibe === 'Bachelor Party' || text.includes('bachelor') || text.includes('party')) {
         category = 'reno_fun';
+    } else if (trip.vibe === 'Premium' || trip.vibe === 'Bucket List') {
+        category = 'luxury';
     } else if (text.includes('reno') || text.includes('casino') || text.includes('silver legacy') || text.includes('atlantis')) {
         category = 'reno_city';
+    } else if (text.includes('desert') || text.includes('valley')) {
+        category = 'desert';
     }
 
     const set = collections[category];
@@ -169,13 +199,18 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
       
       {/* Header Image */}
       <div className="h-40 bg-slate-900 relative shrink-0 overflow-hidden">
+        {/* Skeleton/Placeholder while loading */}
+        <div className={`absolute inset-0 bg-slate-800 animate-pulse z-0 ${imageLoaded ? 'hidden' : 'block'}`} />
+        
         <img 
             src={imgSrc} 
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
             onError={handleImageError}
             alt="Trip Destination" 
-            className="w-full h-full object-cover opacity-90 group-hover/card:scale-110 transition-transform duration-[2000ms] ease-out"
+            className={`w-full h-full object-cover transition-all duration-[2000ms] ease-out ${imageLoaded ? 'opacity-90 scale-100 group-hover/card:scale-110' : 'opacity-0 scale-105'}`}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent pointer-events-none"></div>
         
         {/* Weather Widget (Top Left) */}
         {weather && (
