@@ -43,6 +43,7 @@ export interface TripRecap {
   groupSize: number;
   month: string;
   year: number;
+  imageUrl?: string; // Custom cover image
   courses: string[];
   lodging: string;
   nights: number;

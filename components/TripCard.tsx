@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { TripRecap } from '../types';
 import { COURSES, LODGING } from '../constants';
-import { fetchWeather } from '../services/weatherService';
-import { Calendar, MapPin, Bus, ChevronDown, ChevronUp, Zap, Lightbulb, Trash2, Share2, ArrowUpRight, Trophy, Globe, Sun, Cloud, CloudRain, Snowflake, CloudSun, Star } from 'lucide-react';
+import { Calendar, MapPin, Bus, ChevronDown, ChevronUp, Zap, Lightbulb, Trash2, Share2, ArrowUpRight, Trophy, Edit, Star } from 'lucide-react';
 
 interface TripCardProps {
   trip: TripRecap;
@@ -10,14 +10,14 @@ interface TripCardProps {
   onWebExport: (trip: TripRecap) => void;
   onShare: (trip: TripRecap) => void;
   onDelete: (id: string) => void;
+  onEdit: (trip: TripRecap) => void;
   isAdmin?: boolean;
 }
 
-const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare, onDelete, isAdmin = false }) => {
+const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare, onDelete, onEdit, isAdmin = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [imgSrc, setImgSrc] = useState<string>('');
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [weather, setWeather] = useState<{ temp: number; condition: string; code: number } | null>(null);
 
   const badgeColors: Record<string, string> = {
     'Budget': 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -29,6 +29,11 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
   };
 
   const getTripImage = (trip: TripRecap) => {
+    // Priority: Custom Image URL -> Logic
+    if (trip.imageUrl && trip.imageUrl.trim() !== '') {
+        return trip.imageUrl;
+    }
+
     // Combine fields for keyword search
     const text = `${trip.groupName} ${trip.synopsis} ${trip.lodging} ${trip.courses.join(' ')} ${trip.vibe}`.toLowerCase();
     
@@ -125,40 +130,6 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
 
   useEffect(() => {
     setImgSrc(getTripImage(trip));
-    
-    // Determine primary region for weather
-    let region = '';
-    // Try lodging first
-    const l = LODGING.find(opt => trip.lodging.includes(opt.name) || opt.name.includes(trip.lodging));
-    if (l) {
-        region = l.region;
-    } else {
-        // Try courses
-        for (const cName of trip.courses) {
-            const c = COURSES.find(opt => cName.includes(opt.name) || opt.name.includes(cName));
-            if (c) {
-                region = c.region;
-                break;
-            }
-        }
-    }
-    
-    // Fallback if no exact match found but names are indicative
-    if (!region) {
-        const text = (trip.lodging + ' ' + trip.courses.join(' ')).toLowerCase();
-        if (text.includes('reno')) region = 'Reno';
-        else if (text.includes('tahoe')) region = 'Lake Tahoe';
-        else if (text.includes('graeagle')) region = 'Graeagle';
-        else if (text.includes('truckee')) region = 'Truckee';
-        else if (text.includes('carson')) region = 'Carson Valley';
-    }
-
-    if (region) {
-        fetchWeather(region).then(data => {
-            if (data) setWeather(data);
-        });
-    }
-
   }, [trip]);
 
   const handleImageError = () => {
@@ -184,14 +155,6 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
 
   const lodgingLink = getTrackingLink(trip.lodging, 'lodging');
 
-  const getWeatherIcon = (code: number) => {
-    if (code === 0) return <Sun className="w-3 h-3 text-amber-400" />;
-    if (code <= 3) return <CloudSun className="w-3 h-3 text-amber-200" />;
-    if (code <= 67) return <CloudRain className="w-3 h-3 text-blue-300" />;
-    if (code <= 77) return <Snowflake className="w-3 h-3 text-sky-200" />;
-    return <Cloud className="w-3 h-3 text-slate-300" />;
-  };
-
   return (
     <div 
         className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group/card ${isExpanded ? 'row-span-2' : 'h-[640px]'}`}
@@ -212,14 +175,6 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent pointer-events-none"></div>
         
-        {/* Weather Widget (Top Left) */}
-        {weather && (
-            <div className="absolute top-3 left-3 z-10 bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-2 shadow-sm animate-in fade-in duration-700">
-                {getWeatherIcon(weather.code)}
-                <span className="text-[10px] font-bold text-white tracking-wide">{weather.temp}°F</span>
-            </div>
-        )}
-
         {/* Vibe Badge (Top Right) */}
         <div className="absolute top-3 right-3 z-10">
            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border shadow-sm backdrop-blur-sm ${badgeColors[trip.vibe] || 'bg-white/90 text-slate-800'}`}>
@@ -469,11 +424,11 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
             {isAdmin && (
                 <>
                     <button 
-                        onClick={() => onWebExport(trip)}
-                        className="col-span-1 py-3 bg-white hover:bg-slate-50 text-slate-400 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm"
-                        title="Export for Website"
+                        onClick={() => onEdit(trip)}
+                        className="col-span-1 py-3 bg-white hover:bg-amber-50 text-slate-400 hover:text-amber-600 border border-slate-200 hover:border-amber-200 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm"
+                        title="Edit Trip Details"
                     >
-                        <Globe className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                     </button>
                     <button 
                         onClick={() => onDelete(trip.id)}

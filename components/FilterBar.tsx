@@ -9,6 +9,7 @@ interface FilterState {
   logistics: string[];
   lodgingTypes: string[];
   months: string[];
+  years: number[];
   minPrice: number | '';
   maxPrice: number | '';
   minPax: number | '';
@@ -29,9 +30,10 @@ interface FilterBarProps {
   availableLogistics: string[];
   availableLodgingTypes: string[];
   availableMonths: string[];
+  availableYears: number[];
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCount, availableRegions, availableVibes, availableLogistics, availableLodgingTypes, availableMonths }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCount, availableRegions, availableVibes, availableLogistics, availableLodgingTypes, availableMonths, availableYears }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const handleRegionToggle = (region: string) => {
@@ -69,6 +71,13 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
     onFilterChange({ ...filters, months: newMonths });
   };
 
+  const handleYearToggle = (year: number) => {
+      const newYears = filters.years.includes(year)
+        ? filters.years.filter(y => y !== year)
+        : [...filters.years, year];
+      onFilterChange({ ...filters, years: newYears });
+  };
+
   const resetFilters = () => {
     onFilterChange({
       search: '',
@@ -77,6 +86,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
       logistics: [],
       lodgingTypes: [],
       months: [],
+      years: [],
       minPrice: '',
       maxPrice: '',
       minPax: '',
@@ -96,6 +106,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
     filters.logistics.length > 0 ||
     filters.lodgingTypes.length > 0 ||
     filters.months.length > 0 ||
+    filters.years.length > 0 ||
     filters.minPrice !== '' || 
     filters.tripType !== 'all' ||
     filters.minPax !== '' ||
@@ -109,6 +120,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
     filters.logistics.length + 
     filters.lodgingTypes.length + 
     filters.months.length +
+    filters.years.length +
     (filters.minPrice !== '' || filters.maxPrice !== '' ? 1 : 0) +
     (filters.minPax !== '' || filters.maxPax !== '' ? 1 : 0) +
     (filters.minNights !== '' || filters.maxNights !== '' ? 1 : 0) +
@@ -198,7 +210,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
             <div className="border-t border-slate-100 my-2"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 animate-in fade-in slide-in-from-top-1 duration-200">
                 
-                {/* Column 1: Destinations & Month */}
+                {/* Column 1: Destinations, Month, Year */}
                 <div className="space-y-6">
                     <div className="space-y-3">
                         <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
@@ -225,9 +237,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
 
                     <div className="space-y-3">
                         <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
-                            <Calendar className="w-3 h-3" /> Month
+                            <Calendar className="w-3 h-3" /> Month & Year
                         </label>
-                        <div className="flex flex-wrap gap-2">
+                        
+                        {/* Months */}
+                        <div className="flex flex-wrap gap-2 mb-2">
                             {sortedMonths.length > 0 ? sortedMonths.map(m => (
                                 <button
                                     key={m}
@@ -243,6 +257,23 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
                             )) : (
                                 <span className="text-xs text-slate-400 italic py-1">No dates available</span>
                             )}
+                        </div>
+
+                         {/* Years */}
+                         <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100">
+                            {availableYears.length > 0 && availableYears.map(y => (
+                                <button
+                                    key={y}
+                                    onClick={() => handleYearToggle(y)}
+                                    className={`text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
+                                        filters.years.includes(y) 
+                                        ? 'bg-emerald-800 border-emerald-800 text-white shadow-md' 
+                                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {y}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>

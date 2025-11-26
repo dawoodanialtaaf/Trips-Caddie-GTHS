@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import TripForm from './components/TripForm';
 import TripCard from './components/TripCard';
@@ -12,7 +11,8 @@ import TaskManagerModal from './components/TaskManagerModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import FilterBar from './components/FilterBar';
 import { TripRecap, Region, SmtpConfig, QuoteRequestLog, Task } from './types';
-import { MOCK_RECAPS, COURSES, LODGING } from './constants';
+import { COURSES, LODGING } from './constants';
+import * as Storage from './services/storageService';
 import { Plus, LayoutGrid, Lock, LogOut, Share2, Settings, ClipboardList, CheckSquare, Loader2 } from 'lucide-react';
 
 const DEFAULT_ADMIN_EMAILS = [
@@ -30,6 +30,9 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   
+  // Edit Mode State
+  const [editingTrip, setEditingTrip] = useState<TripRecap | null>(null);
+
   // Infinite Scroll State
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const observerTarget = useRef(null);
@@ -64,6 +67,7 @@ const App: React.FC = () => {
     logistics: [] as string[],
     lodgingTypes: [] as string[],
     months: [] as string[],
+    years: [] as number[],
     minPrice: '' as number | '',
     maxPrice: '' as number | '',
     minPax: '' as number | '',
@@ -75,43 +79,24 @@ const App: React.FC = () => {
     tripType: 'all' as 'all' | 'golf' | 'charter'
   });
 
-  // Load initial data (Simulating DB)
-  useEffect(() => {
-    const saved = localStorage.getItem('gths_recaps');
-    if (saved) {
-      setRecaps(JSON.parse(saved));
-    } else {
-      setRecaps(MOCK_RECAPS);
-      localStorage.setItem('gths_recaps', JSON.stringify(MOCK_RECAPS));
-    }
+  // Load initial data
+  const refreshData = async () => {
+    setRecaps(await Storage.getRecaps());
+    setRequestLogs(await Storage.getLogs());
+    setTasks(await Storage.getTasks());
     
+    const savedEmails = await Storage.getAdminEmails();
+    if (savedEmails) setAdminEmails(savedEmails);
+
+    const savedSmtp = await Storage.getSmtpConfig();
+    if (savedSmtp) setSmtpConfig(savedSmtp);
+  };
+
+  useEffect(() => {
+    refreshData();
     // Check admin session
     const adminSession = sessionStorage.getItem('gths_admin');
     if (adminSession === 'true') setIsAdmin(true);
-
-    // Load admin emails
-    const savedEmails = localStorage.getItem('gths_admin_emails');
-    if (savedEmails) {
-        setAdminEmails(JSON.parse(savedEmails));
-    }
-
-    // Load SMTP Config
-    const savedSmtp = localStorage.getItem('gths_smtp_config');
-    if (savedSmtp) {
-        setSmtpConfig(JSON.parse(savedSmtp));
-    }
-
-    // Load Request Logs
-    const savedLogs = localStorage.getItem('gths_request_logs');
-    if (savedLogs) {
-        setRequestLogs(JSON.parse(savedLogs));
-    }
-
-    // Load Tasks
-    const savedTasks = localStorage.getItem('gths_tasks');
-    if (savedTasks) {
-        setTasks(JSON.parse(savedTasks));
-    }
   }, []);
 
   const handleAdminLogin = () => {
@@ -125,21 +110,38 @@ const App: React.FC = () => {
     sessionStorage.removeItem('gths_admin');
   };
 
-  const handleSaveEmails = (emails: string[]) => {
+  const handleSaveEmails = async (emails: string[]) => {
       setAdminEmails(emails);
-      localStorage.setItem('gths_admin_emails', JSON.stringify(emails));
+      await Storage.saveAdminEmails(emails);
   };
 
-  const handleSaveSmtp = (config: SmtpConfig) => {
+  const handleSaveSmtp = async (config: SmtpConfig) => {
       setSmtpConfig(config);
-      localStorage.setItem('gths_smtp_config', JSON.stringify(config));
+      await Storage.saveSmtpConfig(config);
   };
 
-  const handleSaveRecap = (newRecap: TripRecap) => {
-    const updated = [newRecap, ...recaps];
-    setRecaps(updated);
-    localStorage.setItem('gths_recaps', JSON.stringify(updated));
+  const handleSaveRecap = async (trip: TripRecap) => {
+    const existingIndex = recaps.findIndex(r => r.id === trip.id);
+    let updatedRecaps;
+    
+    if (existingIndex >= 0) {
+        // Update existing trip
+        updatedRecaps = [...recaps];
+        updatedRecaps[existingIndex] = trip;
+    } else {
+        // Create new trip
+        updatedRecaps = [trip, ...recaps];
+    }
+
+    setRecaps(updatedRecaps);
+    await Storage.saveRecap(trip);
+    setEditingTrip(null);
     setView('gallery');
+  };
+
+  const handleEditRecap = (trip: TripRecap) => {
+    setEditingTrip(trip);
+    setView('form');
   };
 
   // Trigger Modal
@@ -148,33 +150,33 @@ const App: React.FC = () => {
   };
 
   // Actual Delete Logic
-  const confirmDeleteRecap = () => {
+  const confirmDeleteRecap = async () => {
     if (recapToDelete) {
         const updated = recaps.filter(r => r.id !== recapToDelete);
         setRecaps(updated);
-        localStorage.setItem('gths_recaps', JSON.stringify(updated));
+        await Storage.deleteRecap(recapToDelete);
         setRecapToDelete(null);
     }
   };
   
   // LOGGING HANDLERS
-  const handleQuoteSent = (log: QuoteRequestLog) => {
+  const handleQuoteSent = async (log: QuoteRequestLog) => {
       // Prepend new log and keep only the last 50
       const updatedLogs = [log, ...requestLogs].slice(0, 50);
       setRequestLogs(updatedLogs);
-      localStorage.setItem('gths_request_logs', JSON.stringify(updatedLogs));
+      await Storage.saveLog(log);
   };
 
-  const handleDeleteLog = (id: string) => {
+  const handleDeleteLog = async (id: string) => {
       if (window.confirm('Delete this log entry?')) {
           const updatedLogs = requestLogs.filter(l => l.id !== id);
           setRequestLogs(updatedLogs);
-          localStorage.setItem('gths_request_logs', JSON.stringify(updatedLogs));
+          await Storage.deleteLog(id);
       }
   };
 
   // TASK HANDLERS
-  const handleAddTask = (text: string) => {
+  const handleAddTask = async (text: string) => {
       const newTask: Task = {
           id: Date.now().toString(),
           text,
@@ -183,19 +185,21 @@ const App: React.FC = () => {
       };
       const updated = [newTask, ...tasks];
       setTasks(updated);
-      localStorage.setItem('gths_tasks', JSON.stringify(updated));
+      await Storage.saveTask(newTask);
   };
 
-  const handleToggleTask = (id: string) => {
+  const handleToggleTask = async (id: string) => {
       const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
       setTasks(updated);
-      localStorage.setItem('gths_tasks', JSON.stringify(updated));
+      
+      const task = updated.find(t => t.id === id);
+      if (task) await Storage.saveTask(task);
   };
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
       const updated = tasks.filter(t => t.id !== id);
       setTasks(updated);
-      localStorage.setItem('gths_tasks', JSON.stringify(updated));
+      await Storage.deleteTask(id);
   };
 
   const pendingTaskCount = tasks.filter(t => !t.completed).length;
@@ -245,6 +249,7 @@ const App: React.FC = () => {
       const logistics = new Set<string>();
       const lodgingTypes = new Set<string>();
       const months = new Set<string>();
+      const years = new Set<number>();
 
       activeRecaps.forEach(r => {
           getRecapRegions(r).forEach(reg => regions.add(reg));
@@ -257,6 +262,7 @@ const App: React.FC = () => {
           if (lType) lodgingTypes.add(lType);
 
           if (r.month) months.add(r.month);
+          if (r.year) years.add(r.year);
       });
 
       return {
@@ -264,7 +270,8 @@ const App: React.FC = () => {
           vibes: Array.from(vibes),
           logistics: Array.from(logistics),
           lodgingTypes: Array.from(lodgingTypes),
-          months: Array.from(months)
+          months: Array.from(months),
+          years: Array.from(years)
       };
   };
 
@@ -294,6 +301,11 @@ const App: React.FC = () => {
       return months;
   }, [recaps, filters.tripType]);
 
+  const availableYears = useMemo(() => {
+      const { years } = getOptionsForType(filters.tripType);
+      return years.sort((a,b) => b - a); // Descending order
+  }, [recaps, filters.tripType]);
+
   const handleFilterChange = (newFilters: typeof filters) => {
     // When changing filters, reset the infinite scroll count
     setVisibleCount(ITEMS_PER_PAGE);
@@ -305,7 +317,8 @@ const App: React.FC = () => {
             vibes: allowedVibes, 
             logistics: allowedLogistics,
             lodgingTypes: allowedLodgingTypes,
-            months: allowedMonths
+            months: allowedMonths,
+            years: allowedYears
         } = getOptionsForType(newFilters.tripType);
         
         // Keep only selected options that exist in the new type's allowed list
@@ -314,6 +327,7 @@ const App: React.FC = () => {
         const validLogistics = newFilters.logistics.filter(l => allowedLogistics.includes(l));
         const validLodgingTypes = newFilters.lodgingTypes.filter(t => allowedLodgingTypes.includes(t));
         const validMonths = newFilters.months.filter(m => allowedMonths.includes(m));
+        const validYears = newFilters.years.filter(y => allowedYears.includes(y));
 
         setFilters({
             ...newFilters,
@@ -321,7 +335,8 @@ const App: React.FC = () => {
             vibes: validVibes,
             logistics: validLogistics,
             lodgingTypes: validLodgingTypes,
-            months: validMonths
+            months: validMonths,
+            years: validYears
         });
     } else {
         setFilters(newFilters);
@@ -378,7 +393,10 @@ const App: React.FC = () => {
         // 10. Month Filter
         if (filters.months.length > 0 && !filters.months.includes(r.month)) return false;
 
-        // 11. Region Filter
+        // 11. Year Filter
+        if (filters.years.length > 0 && !filters.years.includes(r.year)) return false;
+
+        // 12. Region Filter
         if (filters.regions.length > 0) {
             const tripRegions = getRecapRegions(r);
             const hasOverlap = filters.regions.some(filterReg => tripRegions.includes(filterReg));
@@ -543,7 +561,7 @@ const App: React.FC = () => {
 
                         {isAdmin && (
                             <button 
-                                onClick={() => setView('form')}
+                                onClick={() => { setEditingTrip(null); setView('form'); }}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-6 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-emerald-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 whitespace-nowrap"
                             >
                                 <Plus className="w-5 h-5" />
@@ -563,6 +581,7 @@ const App: React.FC = () => {
                     availableLogistics={availableLogistics}
                     availableLodgingTypes={availableLodgingTypes}
                     availableMonths={availableMonths}
+                    availableYears={availableYears}
                 />
 
             </div>
@@ -582,6 +601,7 @@ const App: React.FC = () => {
                             logistics: [],
                             lodgingTypes: [],
                             months: [],
+                            years: [],
                             minPrice: '',
                             maxPrice: '',
                             minPax: '',
@@ -608,6 +628,7 @@ const App: React.FC = () => {
                                 onWebExport={(trip) => setSelectedRecapForWeb(trip)}
                                 onShare={(trip) => setSelectedRecapForShare(trip)}
                                 onDelete={(id) => handleDeleteRecap(id)}
+                                onEdit={(trip) => handleEditRecap(trip)}
                                 isAdmin={isAdmin}
                             />
                         ))}
@@ -632,8 +653,10 @@ const App: React.FC = () => {
 
         {view === 'form' && (
             <TripForm 
+                key={editingTrip ? editingTrip.id : 'new'}
                 onSave={handleSaveRecap} 
-                onCancel={() => setView('gallery')} 
+                onCancel={() => { setView('gallery'); setEditingTrip(null); }} 
+                initialData={editingTrip || undefined}
             />
         )}
       </main>
@@ -686,7 +709,10 @@ const App: React.FC = () => {
             smtpConfig={smtpConfig}
             onSaveEmails={handleSaveEmails}
             onSaveSmtp={handleSaveSmtp}
-            onClose={() => setShowSettingsModal(false)}
+            onClose={() => {
+                setShowSettingsModal(false);
+                refreshData(); // Refresh app data if import happened
+            }}
           />
       )}
 

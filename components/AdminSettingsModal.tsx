@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
-import { X, Plus, Trash2, Save, Mail, Settings, Server, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Plus, Trash2, Save, Mail, Settings, Server, Eye, EyeOff, Database, Download, Upload, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { SmtpConfig } from '../types';
+import * as Storage from '../services/storageService';
 
 interface AdminSettingsModalProps {
   emails: string[];
@@ -12,7 +12,7 @@ interface AdminSettingsModalProps {
 }
 
 const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ emails, smtpConfig, onSaveEmails, onSaveSmtp, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'recipients' | 'smtp'>('recipients');
+  const [activeTab, setActiveTab] = useState<'recipients' | 'smtp' | 'db'>('recipients');
   
   // Recipients State
   const [emailList, setEmailList] = useState<string[]>(emails);
@@ -29,6 +29,10 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ emails, smtpCon
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  // DB State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
   const handleAddEmail = () => {
     if (newEmail && newEmail.includes('@') && !emailList.includes(newEmail)) {
       setEmailList([...emailList, newEmail]);
@@ -44,6 +48,22 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ emails, smtpCon
     onSaveEmails(emailList);
     onSaveSmtp(config);
     onClose();
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          try {
+              await Storage.importDatabase(file);
+              setImportStatus('success');
+              // Delay close slightly so user sees success
+              setTimeout(() => {
+                  onClose();
+              }, 1500);
+          } catch (err) {
+              setImportStatus('error');
+          }
+      }
   };
 
   return (
@@ -73,7 +93,13 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ emails, smtpCon
             onClick={() => setActiveTab('smtp')}
             className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'smtp' ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
           >
-            <Server className="w-4 h-4" /> Email Server (SMTP)
+            <Server className="w-4 h-4" /> Email Server
+          </button>
+          <button 
+            onClick={() => setActiveTab('db')}
+            className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'db' ? 'border-amber-500 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            <Database className="w-4 h-4" /> Backup & Restore
           </button>
         </div>
 
@@ -215,19 +241,95 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ emails, smtpCon
             </div>
           )}
 
+          {/* DATABASE TAB (NEW) */}
+          {activeTab === 'db' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="bg-amber-50 border border-amber-100 p-4 rounded-lg flex gap-3">
+                    <div className="bg-amber-100 p-2 rounded-full h-fit text-amber-600">
+                        <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-amber-900">Important Data Safety Warning</h4>
+                        <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                            Your data (1000+ packages) is stored <strong>locally in this browser</strong>. 
+                            If you clear your cache or change computers, <strong>it will be lost</strong>.
+                            Please use the Backup feature below regularly.
+                        </p>
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {/* Export */}
+                     <div className="border border-slate-200 rounded-xl p-5 hover:border-emerald-300 transition-colors">
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-3">
+                            <Download className="w-5 h-5" />
+                        </div>
+                        <h4 className="font-bold text-slate-800 text-sm mb-1">Backup Database</h4>
+                        <p className="text-xs text-slate-500 mb-4">
+                            Download a .json file containing all trips, settings, logs, and tasks. Save this to your computer or cloud storage.
+                        </p>
+                        <button 
+                            onClick={Storage.exportDatabase}
+                            className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-colors"
+                        >
+                            Download Backup
+                        </button>
+                     </div>
+
+                     {/* Import */}
+                     <div className="border border-slate-200 rounded-xl p-5 hover:border-blue-300 transition-colors">
+                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-3">
+                            <Upload className="w-5 h-5" />
+                        </div>
+                        <h4 className="font-bold text-slate-800 text-sm mb-1">Restore Database</h4>
+                        <p className="text-xs text-slate-500 mb-4">
+                            Upload a previously saved .json backup file to restore your data. <span className="text-rose-500 font-bold">This overwrites current data.</span>
+                        </p>
+                        
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleImport}
+                            accept="application/json"
+                            className="hidden"
+                        />
+                        
+                        {importStatus === 'success' ? (
+                            <div className="w-full py-2 bg-green-50 text-green-700 rounded-lg text-sm font-bold flex items-center justify-center gap-2 border border-green-200">
+                                <CheckCircle2 className="w-4 h-4" /> Restored Successfully!
+                            </div>
+                        ) : importStatus === 'error' ? (
+                             <div className="w-full py-2 bg-rose-50 text-rose-700 rounded-lg text-sm font-bold flex items-center justify-center gap-2 border border-rose-200">
+                                <AlertTriangle className="w-4 h-4" /> Import Failed
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-full py-2 bg-white border-2 border-slate-100 hover:border-blue-200 text-slate-700 hover:text-blue-700 rounded-lg text-sm font-bold transition-colors"
+                            >
+                                Select File to Restore
+                            </button>
+                        )}
+                     </div>
+                 </div>
+              </div>
+          )}
+
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 p-4 border-t border-slate-100 bg-slate-50">
           <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg font-medium">
-              Cancel
+              Close
           </button>
-          <button 
-              onClick={handleSaveAll}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm shadow-emerald-200"
-          >
-              <Save className="w-4 h-4" /> Save Configuration
-          </button>
+          {activeTab !== 'db' && (
+              <button 
+                  onClick={handleSaveAll}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm shadow-emerald-200"
+              >
+                  <Save className="w-4 h-4" /> Save Configuration
+              </button>
+          )}
         </div>
       </div>
     </div>
