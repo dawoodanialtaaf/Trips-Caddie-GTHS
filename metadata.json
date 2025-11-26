@@ -1,0 +1,5 @@
+{
+  "name": "Trips Caddie",
+  "description": "An internal tool for Golf the High Sierra to archive past trips, automate recaps using Gemini AI, and use real data for fast quoting.",
+  "requestFramePermissions": []
+}
