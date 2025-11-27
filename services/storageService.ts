@@ -1,23 +1,29 @@
 
 import { TripRecap, QuoteRequestLog, SmtpConfig, Task } from '../types';
+import { MOCK_RECAPS } from '../constants';
 
-// STORAGE KEYS
-const RECAPS_KEY = 'gths_recaps';
-const LOGS_KEY = 'gths_logs';
-const TASKS_KEY = 'gths_tasks';
-const EMAILS_KEY = 'gths_admin_emails';
-const SMTP_KEY = 'gths_smtp_config';
+const STORAGE_KEYS = {
+  RECAPS: 'gths_recaps',
+  LOGS: 'gths_request_logs',
+  TASKS: 'gths_tasks',
+  ADMIN_EMAILS: 'gths_admin_emails',
+  SMTP_CONFIG: 'gths_smtp_config'
+};
+
+// Helper to simulate async behavior for API compatibility
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- RECAPS ---
 
 export const getRecaps = async (): Promise<TripRecap[]> => {
-  try {
-    const data = localStorage.getItem(RECAPS_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (e) {
-    console.error("Error loading recaps from LocalStorage", e);
-    return [];
+  await delay(100); // Simulate network
+  const stored = localStorage.getItem(STORAGE_KEYS.RECAPS);
+  if (!stored) {
+      // Initialize with Mocks if empty
+      localStorage.setItem(STORAGE_KEYS.RECAPS, JSON.stringify(MOCK_RECAPS));
+      return MOCK_RECAPS;
   }
+  return JSON.parse(stored);
 };
 
 export const saveRecap = async (recap: TripRecap): Promise<boolean> => {
@@ -26,13 +32,12 @@ export const saveRecap = async (recap: TripRecap): Promise<boolean> => {
     const index = recaps.findIndex(r => r.id === recap.id);
     
     if (index >= 0) {
-      recaps[index] = recap;
+        recaps[index] = recap;
     } else {
-      // Add to top
-      recaps.unshift(recap);
+        recaps.unshift(recap);
     }
     
-    localStorage.setItem(RECAPS_KEY, JSON.stringify(recaps));
+    localStorage.setItem(STORAGE_KEYS.RECAPS, JSON.stringify(recaps));
     return true;
   } catch (e) {
     console.error("Error saving recap", e);
@@ -40,143 +45,121 @@ export const saveRecap = async (recap: TripRecap): Promise<boolean> => {
   }
 };
 
-export const saveRecaps = async (recaps: TripRecap[]): Promise<boolean> => {
+export const deleteRecap = async (id: string): Promise<boolean> => {
   try {
-    localStorage.setItem(RECAPS_KEY, JSON.stringify(recaps));
+    const recaps = await getRecaps();
+    const filtered = recaps.filter(r => r.id !== id);
+    localStorage.setItem(STORAGE_KEYS.RECAPS, JSON.stringify(filtered));
     return true;
   } catch (e) {
     return false;
   }
 };
 
-export const deleteRecap = async (id: string): Promise<boolean> => {
-  try {
-    const recaps = await getRecaps();
-    const updated = recaps.filter(r => r.id !== id);
-    localStorage.setItem(RECAPS_KEY, JSON.stringify(updated));
+// Deprecated bulk save
+export const saveRecaps = async (recaps: TripRecap[]): Promise<boolean> => {
+    localStorage.setItem(STORAGE_KEYS.RECAPS, JSON.stringify(recaps));
     return true;
-  } catch (e) {
-    console.error("Error deleting recap", e);
-    return false;
-  }
 };
 
 // --- LOGS ---
 
 export const getLogs = async (): Promise<QuoteRequestLog[]> => {
-  try {
-    const data = localStorage.getItem(LOGS_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (e) {
-    return [];
-  }
+  const stored = localStorage.getItem(STORAGE_KEYS.LOGS);
+  return stored ? JSON.parse(stored) : [];
 };
 
 export const saveLog = async (log: QuoteRequestLog): Promise<boolean> => {
   try {
-    const logs = await getLogs();
-    logs.unshift(log);
-    // Keep last 50
-    const trimmed = logs.slice(0, 50);
-    localStorage.setItem(LOGS_KEY, JSON.stringify(trimmed));
-    return true;
+      const logs = await getLogs();
+      const updated = [log, ...logs].slice(0, 50); // Keep last 50
+      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(updated));
+      return true;
   } catch (e) {
-    return false;
+      return false;
   }
-};
-
-export const saveLogs = async (logs: QuoteRequestLog[]): Promise<void> => {
-  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
 };
 
 export const deleteLog = async (id: string): Promise<boolean> => {
-  try {
-    const logs = await getLogs();
-    const updated = logs.filter(l => l.id !== id);
-    localStorage.setItem(LOGS_KEY, JSON.stringify(updated));
-    return true;
-  } catch (e) {
-    return false;
-  }
+    try {
+        const logs = await getLogs();
+        const updated = logs.filter(l => l.id !== id);
+        localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(updated));
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
+export const saveLogs = async (logs: QuoteRequestLog[]) => {
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs));
 };
 
 export const updateLogStatus = async (id: string, status: string): Promise<boolean> => {
-  return true; // Not strictly implemented in local version yet
+    return true; // Placeholder
 };
 
 // --- TASKS ---
 
 export const getTasks = async (): Promise<Task[]> => {
-  try {
-    const data = localStorage.getItem(TASKS_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (e) {
-    return [];
-  }
+  const stored = localStorage.getItem(STORAGE_KEYS.TASKS);
+  return stored ? JSON.parse(stored) : [];
 };
 
 export const saveTask = async (task: Task): Promise<boolean> => {
-  try {
-    const tasks = await getTasks();
-    const index = tasks.findIndex(t => t.id === task.id);
-    if (index >= 0) {
-        tasks[index] = task;
-    } else {
-        tasks.unshift(task);
+    try {
+        const tasks = await getTasks();
+        const index = tasks.findIndex(t => t.id === task.id);
+        if (index >= 0) {
+            tasks[index] = task;
+        } else {
+            tasks.unshift(task);
+        }
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+        return true;
+    } catch (e) {
+        return false;
     }
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
-
-export const saveTasks = async (tasks: Task[]): Promise<void> => {
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
 };
 
 export const deleteTask = async (id: string): Promise<boolean> => {
-  try {
-    const tasks = await getTasks();
-    const updated = tasks.filter(t => t.id !== id);
-    localStorage.setItem(TASKS_KEY, JSON.stringify(updated));
-    return true;
-  } catch (e) {
-    return false;
-  }
+    try {
+        const tasks = await getTasks();
+        const updated = tasks.filter(t => t.id !== id);
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(updated));
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
+export const saveTasks = async (tasks: Task[]) => {
+    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
 };
 
 // --- CONFIG ---
 
 export const getAdminEmails = async (): Promise<string[] | null> => {
-  try {
-    const data = localStorage.getItem(EMAILS_KEY);
-    return data ? JSON.parse(data) : null;
-  } catch (e) {
-    return null;
-  }
+  const stored = localStorage.getItem(STORAGE_KEYS.ADMIN_EMAILS);
+  return stored ? JSON.parse(stored) : null;
 };
 
 export const saveAdminEmails = async (emails: string[]): Promise<boolean> => {
-  localStorage.setItem(EMAILS_KEY, JSON.stringify(emails));
+  localStorage.setItem(STORAGE_KEYS.ADMIN_EMAILS, JSON.stringify(emails));
   return true;
 };
 
 export const getSmtpConfig = async (): Promise<SmtpConfig | null> => {
-  try {
-    const data = localStorage.getItem(SMTP_KEY);
-    return data ? JSON.parse(data) : null;
-  } catch (e) {
-    return null;
-  }
+  const stored = localStorage.getItem(STORAGE_KEYS.SMTP_CONFIG);
+  return stored ? JSON.parse(stored) : null;
 };
 
 export const saveSmtpConfig = async (config: SmtpConfig): Promise<boolean> => {
-  localStorage.setItem(SMTP_KEY, JSON.stringify(config));
+  localStorage.setItem(STORAGE_KEYS.SMTP_CONFIG, JSON.stringify(config));
   return true;
 };
 
-// --- IMPORT / EXPORT ---
+// --- BACKUP & RESTORE ---
 
 export const exportDatabase = async () => {
   try {
@@ -187,14 +170,14 @@ export const exportDatabase = async () => {
       adminEmails: await getAdminEmails(),
       smtp: await getSmtpConfig(),
       timestamp: new Date().toISOString(),
-      version: 'localStorage-backup'
+      version: 'local-storage-v1'
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `CaddieArchive_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `CaddieArchive_LocalBackup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -211,12 +194,11 @@ export const importDatabase = async (file: File): Promise<boolean> => {
       try {
         const json = JSON.parse(e.target?.result as string);
         
-        // Restore to LocalStorage
-        if (json.recaps) localStorage.setItem(RECAPS_KEY, JSON.stringify(json.recaps));
-        if (json.logs) localStorage.setItem(LOGS_KEY, JSON.stringify(json.logs));
-        if (json.tasks) localStorage.setItem(TASKS_KEY, JSON.stringify(json.tasks));
-        if (json.adminEmails) localStorage.setItem(EMAILS_KEY, JSON.stringify(json.adminEmails));
-        if (json.smtp) localStorage.setItem(SMTP_KEY, JSON.stringify(json.smtp));
+        if (json.recaps) await saveRecaps(json.recaps);
+        if (json.logs) await saveLogs(json.logs);
+        if (json.tasks) await saveTasks(json.tasks);
+        if (json.adminEmails) await saveAdminEmails(json.adminEmails);
+        if (json.smtp) await saveSmtpConfig(json.smtp);
         
         resolve(true);
       } catch (err) {

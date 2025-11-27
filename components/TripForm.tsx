@@ -191,7 +191,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
                      </div>
                     <div>
                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Price/Person ($)</label>
-                         <input type="number" value={pricePerPerson} onChange={e => setPricePerPerson(parseInt(e.target.value))} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
+                         <input type="number" value={pricePerPerson} onChange={e => setPricePerPerson(parseFloat(e.target.value))} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
                      </div>
                 </div>
 
@@ -389,8 +389,14 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Planner Note</label>
-                        <textarea rows={3} value={whyItWorked} onChange={e => setWhyItWorked(e.target.value)} className="w-full p-2 border border-slate-300 rounded outline-none text-sm bg-white text-slate-900" />
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Pro Tip / Package Insight</label>
+                        <textarea 
+                            rows={3} 
+                            value={whyItWorked} 
+                            onChange={e => setWhyItWorked(e.target.value)} 
+                            placeholder="Why this trip worked, specific advice, or highlights..."
+                            className="w-full p-2 border border-slate-300 rounded outline-none text-sm bg-white text-slate-900" 
+                        />
                     </div>
                 </div>
 

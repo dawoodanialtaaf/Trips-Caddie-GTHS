@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { COURSES, LODGING } from "../constants";
 
@@ -23,7 +24,7 @@ export const parseTripNotes = async (notes: string): Promise<any> => {
       pricePerPersonEstimate: { type: Type.NUMBER, description: "Calculate from Total Quoted / Passengers if needed." },
       vibe: { type: Type.STRING, enum: ['Budget', 'Value', 'Premium', 'Bucket List', 'Bachelor Party', 'Corporate'] },
       synopsis: { type: Type.STRING, description: "Short summary of the trip logistics." },
-      whyItWorked: { type: Type.STRING },
+      whyItWorked: { type: Type.STRING, description: "A pro tip or insight regarding why this package worked well (e.g. 'Driver wait on site was key', 'Morning rounds allowed for afternoon travel')." },
       highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
       
       // New Detailed Fields

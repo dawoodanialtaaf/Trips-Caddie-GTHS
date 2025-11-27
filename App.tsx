@@ -477,20 +477,6 @@ const App: React.FC = () => {
                     Get Custom Quote
                  </a>
              )}
-
-             {!isAdmin && (
-                 <button 
-                    onClick={() => setShowTasksModal(true)}
-                    className="flex items-center gap-2 text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/10 transition-all backdrop-blur-sm relative whitespace-nowrap"
-                 >
-                    <CheckSquare className="w-3.5 h-3.5" /> Tasks
-                    {pendingTaskCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold border border-emerald-900 shadow-sm">
-                            {pendingTaskCount}
-                        </span>
-                    )}
-                 </button>
-             )}
              
              <button 
                 onClick={() => setShowPageShare(true)}
@@ -550,15 +536,6 @@ const App: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-4 shrink-0 w-full xl:w-auto">
-                        {!isAdmin && (
-                            <a 
-                                href="tel:+18885861475"
-                                className="flex-1 xl:flex-none bg-white border-2 border-blue-400 text-blue-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-500 px-8 py-6 rounded-xl text-xl sm:text-2xl font-medium transition-all shadow-sm hover:shadow-md flex items-center justify-center text-center whitespace-nowrap"
-                            >
-                            Toll Free: +1 (888) 586-1475
-                            </a>
-                        )}
-
                         {isAdmin && (
                             <button 
                                 onClick={() => { setEditingTrip(null); setView('form'); }}

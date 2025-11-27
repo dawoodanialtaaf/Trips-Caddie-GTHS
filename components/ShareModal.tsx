@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TripRecap } from '../types';
 import { X, Copy, Facebook, Linkedin, Twitter, Share2, FileText } from 'lucide-react';
@@ -91,7 +92,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ recap, onClose }) => {
             </div>
             <div class="metric">
               <span class="metric-label">Est. Price</span>
-              <span class="metric-value">$${recap.pricePerPerson}/pp</span>
+              <span class="metric-value">$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(recap.pricePerPerson)}/pp</span>
             </div>
           </div>
 

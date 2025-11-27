@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { TripRecap } from '../types';
 import { COURSES, LODGING } from '../constants';
-import { Calendar, MapPin, Bus, ChevronDown, ChevronUp, Zap, Lightbulb, Trash2, Share2, ArrowUpRight, Trophy, Edit, Star } from 'lucide-react';
+import { Calendar, MapPin, Bus, ChevronDown, ChevronUp, Zap, Lightbulb, Trash2, Share2, ArrowUpRight, Trophy, Edit, Star, Clock } from 'lucide-react';
 
 interface TripCardProps {
   trip: TripRecap;
@@ -138,12 +138,16 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
   };
 
   const getTrackingLink = (name: string, type: 'course' | 'lodging') => {
+    if (!name) return null;
+    
     let url = '';
+    const cleanName = name.toLowerCase();
+
     if (type === 'course') {
-        const found = COURSES.find(c => name.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(name.toLowerCase()));
+        const found = COURSES.find(c => cleanName.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(cleanName));
         url = found?.url || '';
     } else {
-        const found = LODGING.find(l => name.toLowerCase().includes(l.name.toLowerCase()) || l.name.toLowerCase().includes(name.toLowerCase()));
+        const found = LODGING.find(l => cleanName.includes(l.name.toLowerCase()) || l.name.toLowerCase().includes(cleanName));
         url = found?.url || '';
     }
 
@@ -211,7 +215,9 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
                     className="flex flex-col items-center justify-center bg-emerald-50/50 border border-emerald-100/50 rounded-xl py-2.5 group/metric hover:bg-emerald-50 hover:shadow-sm hover:border-emerald-200 transition-all cursor-help"
                 >
                     <span className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider leading-none mb-0.5">From</span>
-                    <span className="block text-lg font-bold text-emerald-800 leading-none">${trip.pricePerPerson}</span>
+                    <span className="block text-lg font-bold text-emerald-800 leading-none">
+                        ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(trip.pricePerPerson)}
+                    </span>
                     <span className="text-[9px] uppercase font-bold text-emerald-600/60 tracking-wide mt-0.5">/Person</span>
                 </div>
                 <div 
@@ -262,26 +268,28 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
                         })}
                     </div>
                 </div>
-                <div>
-                    <div className="flex items-center text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2.5">
-                        <Star className="w-3 h-3 mr-1" /> Stayed
+                {trip.lodging && (
+                    <div>
+                        <div className="flex items-center text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2.5">
+                            <Star className="w-3 h-3 mr-1" /> Stayed
+                        </div>
+                        {lodgingLink ? (
+                            <a 
+                                href={lodgingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all gap-1 group/link"
+                            >
+                                {trip.lodging}
+                                <ArrowUpRight className="w-2.5 h-2.5 opacity-30 group-hover/link:opacity-100" />
+                            </a>
+                        ) : (
+                            <span className="inline-flex items-center bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100">
+                                {trip.lodging}
+                            </span>
+                        )}
                     </div>
-                    {lodgingLink ? (
-                        <a 
-                            href={lodgingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all gap-1 group/link"
-                        >
-                            {trip.lodging}
-                            <ArrowUpRight className="w-2.5 h-2.5 opacity-30 group-hover/link:opacity-100" />
-                        </a>
-                    ) : (
-                        <span className="inline-flex items-center bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100">
-                            {trip.lodging}
-                        </span>
-                    )}
-                </div>
+                )}
             </div>
             
              {/* Highlights */}
@@ -291,32 +299,46 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
                         <Zap className="w-3 h-3 mr-1 text-amber-500 fill-amber-500" /> Highlights
                     </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-2">
-                        {trip.highlights.map((h, i) => (
-                            <span key={i} className="text-xs font-medium text-slate-600 flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {h}
-                            </span>
-                        ))}
+                        {trip.highlights.map((h, i) => {
+                            // Try to match highlights to links (e.g. "Whitehawk Ranch")
+                            const link = getTrackingLink(h, 'course') || getTrackingLink(h, 'lodging');
+                            if (link) {
+                                return (
+                                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-slate-600 flex items-center gap-2 hover:text-emerald-700 hover:underline">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 
+                                        {h} <ArrowUpRight className="w-2.5 h-2.5" />
+                                    </a>
+                                );
+                            }
+                            return (
+                                <span key={i} className="text-xs font-medium text-slate-600 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {h}
+                                </span>
+                            );
+                        })}
                     </div>
                 </div>
             )}
 
-            {/* Planner Insight / Pro Tip */}
-            <div className={`border rounded-xl p-5 mb-2 relative overflow-hidden group/insight ${trip.rounds > 0 ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/insight:opacity-20 transition-opacity pointer-events-none">
-                    <Lightbulb className={`w-16 h-16 ${trip.rounds > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                    <div className={`p-1 rounded-md shadow-sm ${trip.rounds > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
-                        <Lightbulb className="w-3.5 h-3.5" />
+            {/* Planner Insight / Pro Tip - Only render if content exists */}
+            {trip.whyItWorked && (
+                <div className={`border rounded-xl p-5 mb-2 relative overflow-hidden group/insight ${trip.rounds > 0 ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/insight:opacity-20 transition-opacity pointer-events-none">
+                        <Lightbulb className={`w-16 h-16 ${trip.rounds > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
                     </div>
-                    <span className={`text-[10px] font-extrabold uppercase tracking-widest ${trip.rounds > 0 ? 'text-amber-800' : 'text-slate-600'}`}>
-                        {trip.rounds > 0 ? "Pro Tip" : "Planner Insight"}
-                    </span>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className={`p-1 rounded-md shadow-sm ${trip.rounds > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                            <Lightbulb className="w-3.5 h-3.5" />
+                        </div>
+                        <span className={`text-[10px] font-extrabold uppercase tracking-widest ${trip.rounds > 0 ? 'text-amber-800' : 'text-slate-600'}`}>
+                            {trip.rounds > 0 ? "Pro Tip" : "Package Insight"}
+                        </span>
+                    </div>
+                    <p className={`text-xs leading-relaxed font-medium relative z-10 pl-1 ${trip.rounds > 0 ? 'text-amber-950/80' : 'text-slate-600'}`}>
+                        "{trip.whyItWorked}"
+                    </p>
                 </div>
-                <p className={`text-xs leading-relaxed font-medium relative z-10 pl-1 ${trip.rounds > 0 ? 'text-amber-950/80' : 'text-slate-600'}`}>
-                    "{trip.whyItWorked}"
-                </p>
-            </div>
+            )}
         </div>
 
         {/* LOGISTICS & MANIFEST SECTION (Revealed on Expand) */}
@@ -339,34 +361,62 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
                     </div>
                 </div>
 
-                {/* Itinerary Timeline */}
-                <div className="ml-3 pl-8 border-l-2 border-slate-200 space-y-8 py-2">
-                    {trip.dailyItinerary?.map((day, idx) => (
-                        <div key={idx} className="relative group/day">
-                            <div className="absolute -left-[39px] top-1 h-5 w-5 rounded-full bg-white border-2 border-emerald-500 shadow-sm z-10 flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                {/* Itinerary Timeline - Refined Visuals */}
+                <div className="relative pl-8 space-y-8 py-2 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                    {trip.dailyItinerary?.map((day, idx) => {
+                        // Check for links in activity/location
+                        const activityLink = getTrackingLink(day.activity, 'course') || getTrackingLink(day.activity, 'lodging');
+                        const locationLink = getTrackingLink(day.location, 'course') || getTrackingLink(day.location, 'lodging');
+
+                        return (
+                        <div key={idx} className="relative z-0">
+                            {/* Visual Node */}
+                            <div className="absolute -left-[29px] top-1 h-6 w-6 rounded-full bg-white border-2 border-emerald-500 z-10 flex items-center justify-center shadow-sm">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                             </div>
                             
-                            <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold text-slate-800">
-                                        Day {day.day} <span className="text-slate-300 mx-1">·</span> {day.activity}
+                            <div className="flex flex-col gap-2">
+                                {/* Header Row */}
+                                <div className="flex items-start justify-between gap-4">
+                                    <span className="text-sm font-bold text-slate-800 leading-tight">
+                                        Day {day.day} <span className="text-slate-300 mx-1">·</span> 
+                                        {activityLink ? (
+                                            <a href={activityLink} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 hover:underline">
+                                                {day.activity} <ArrowUpRight className="inline w-3 h-3 mb-0.5" />
+                                            </a>
+                                        ) : (
+                                            <span>{day.activity}</span>
+                                        )}
                                     </span>
-                                    <span className="text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                                        {day.time}
-                                    </span>
-                                </div>
-                                <div className="text-xs text-slate-600 pl-0">
-                                    <p className="mb-2 font-medium">{day.location}</p>
-                                    {day.notes && (
-                                        <div className="text-slate-500 italic text-[11px] leading-relaxed">
-                                            "{day.notes}"
-                                        </div>
+                                    {day.time && (
+                                         <span className="shrink-0 text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                                            {day.time}
+                                        </span>
                                     )}
                                 </div>
+                                
+                                {/* Location */}
+                                {day.location && (
+                                    <div className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 -mt-0.5">
+                                        {locationLink ? (
+                                            <a href={locationLink} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-600 hover:underline flex items-center gap-1">
+                                                {day.location} <ArrowUpRight className="w-2.5 h-2.5" />
+                                            </a>
+                                        ) : (
+                                            day.location
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Notes */}
+                                {day.notes && (
+                                    <div className="text-xs text-slate-500 italic leading-relaxed border-l-2 border-slate-200 pl-3 py-1 mt-1">
+                                        "{day.notes}"
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    ))}
+                    )})}
                 </div>
 
                  {/* Special Requests */}

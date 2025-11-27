@@ -43,6 +43,9 @@ const QuoteGenerator: React.FC<QuoteGeneratorProps> = ({ recap, onClose, recipie
       const itineraryText = recap.dailyItinerary?.map(d => `Day ${d.day}: ${d.activity} (${d.time}) - ${d.location}\n   Note: ${d.notes || 'N/A'}`).join('\n');
       const highlightsText = recap.highlights?.join(', ');
       const specialReqsText = recap.logistics?.specialRequests?.join('\n- ');
+      
+      // Format Price
+      const formattedPrice = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(recap.pricePerPerson);
 
       return `INTERNAL QUOTE REQUEST
 
@@ -57,7 +60,7 @@ Base Template: ${recap.groupName}
 Pax: ${recap.groupSize}
 Vehicle: ${recap.logistics?.transportType || 'Standard'}
 Duration: ${recap.nights} Nights
-Budget Ref: $${recap.pricePerPerson}/pp
+Budget Ref: $${formattedPrice}/pp
 Lodging: ${recap.lodging}
 
 ITINERARY SNAPSHOT:
