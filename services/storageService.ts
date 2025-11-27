@@ -130,22 +130,57 @@ export const deleteTask = async (id: string): Promise<boolean> => {
   return true;
 };
 
-// --- Config (Stubbed) ---
+// --- Config ---
 
 export const getAdminEmails = async (): Promise<string[] | null> => {
-  return null;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api-config.php?key=admin_emails&t=${Date.now()}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return Array.isArray(data) ? data : null;
+  } catch (e) {
+    console.error("Error loading admin emails", e);
+    return null;
+  }
 };
 
 export const saveAdminEmails = async (emails: string[]): Promise<boolean> => {
-  return true;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api-config.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'admin_emails', value: emails })
+    });
+    return response.ok;
+  } catch (e) {
+    console.error("Error saving admin emails", e);
+    return false;
+  }
 };
 
 export const getSmtpConfig = async (): Promise<SmtpConfig | null> => {
-  return null;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api-config.php?key=smtp_config&t=${Date.now()}`);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (e) {
+    console.error("Error loading SMTP config", e);
+    return null;
+  }
 };
 
 export const saveSmtpConfig = async (config: SmtpConfig): Promise<boolean> => {
-  return true;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api-config.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'smtp_config', value: config })
+    });
+    return response.ok;
+  } catch (e) {
+    console.error("Error saving SMTP config", e);
+    return false;
+  }
 };
 
 // --- Backup & Restore ---
@@ -195,6 +230,14 @@ export const importDatabase = async (file: File): Promise<boolean> => {
           for (const log of json.logs) {
             await saveLog(log);
           }
+        }
+
+        if (json.adminEmails && Array.isArray(json.adminEmails)) {
+          await saveAdminEmails(json.adminEmails);
+        }
+
+        if (json.smtp) {
+          await saveSmtpConfig(json.smtp);
         }
         
         resolve(true);
