@@ -55,8 +55,13 @@ export const deleteRecap = async (id: string): Promise<boolean> => {
 export const getLogs = async (): Promise<QuoteRequestLog[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api-logs.php?t=${Date.now()}`);
-    if (!response.ok) throw new Error('Failed to fetch');
-    return await response.json();
+    if (!response.ok) {
+      console.error("getLogs API error:", response.status);
+      return [];
+    }
+    const data = await response.json();
+    console.log("Logs loaded from API:", data);
+    return Array.isArray(data) ? data : [];
   } catch (e) {
     console.error("Error loading logs", e);
     return [];
@@ -64,17 +69,25 @@ export const getLogs = async (): Promise<QuoteRequestLog[]> => {
 };
 
 export const saveLogs = async (logs: QuoteRequestLog[]): Promise<void> => {
-  console.warn('saveLogs is deprecated');
+  console.warn('saveLogs is deprecated, use saveLog');
 };
 
 export const saveLog = async (log: QuoteRequestLog): Promise<boolean> => {
   try {
+    console.log("Saving log to API:", log);
     const response = await fetch(`${API_BASE_URL}/api-logs.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(log)
     });
-    if (!response.ok) throw new Error('Failed to save');
+    
+    if (!response.ok) {
+      console.error("saveLog API error:", response.status);
+      return false;
+    }
+    
+    const result = await response.json();
+    console.log("Log saved, API response:", result);
     return true;
   } catch (e) {
     console.error("Error saving log", e);
@@ -93,7 +106,7 @@ export const deleteLog = async (id: string): Promise<boolean> => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
     });
-    if (!response.ok) throw new Error('Failed to delete');
+    if (!response.ok) return false;
     return true;
   } catch (e) {
     console.error("Error deleting log", e);
