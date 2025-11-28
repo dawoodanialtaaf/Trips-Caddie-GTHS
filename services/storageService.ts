@@ -1,3 +1,25 @@
+/**
+ * CRITICAL STORAGE RULES - DO NOT MODIFY
+ * 
+ * This file uses MySQL database storage ONLY via API endpoints.
+ * LocalStorage is DISABLED and must NEVER be used.
+ * 
+ * API Base URL: https://golfthehighsierra.com/trips-caddie/api
+ * 
+ * NEVER:
+ * - Add localStorage.getItem or localStorage.setItem
+ * - Add fallback to LocalStorage
+ * - Use mock data (MOCK_RECAPS)
+ * - Change API_BASE_URL
+ * 
+ * All data MUST go through these API endpoints:
+ * - api-recaps.php (trips)
+ * - api-logs.php (quote requests) 
+ * - api-config.php (admin settings)
+ * 
+ * If API fails, return empty array [] or null - DO NOT fallback to LocalStorage
+ */
+
 import { TripRecap, QuoteRequestLog, SmtpConfig, Task } from '../types';
 
 const API_BASE_URL = 'https://golfthehighsierra.com/trips-caddie/api';
@@ -147,11 +169,19 @@ export const getAdminEmails = async (): Promise<string[] | null> => {
 export const saveAdminEmails = async (emails: string[]): Promise<boolean> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api-config.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'admin_emails', value: emails })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save",
+        config: {
+          config_key: "admin_emails",
+          config_value: emails
+        }
+      })
     });
-    return response.ok;
+
+    const result = await response.json();
+    return result.success === true;
   } catch (e) {
     console.error("Error saving admin emails", e);
     return false;
@@ -172,11 +202,19 @@ export const getSmtpConfig = async (): Promise<SmtpConfig | null> => {
 export const saveSmtpConfig = async (config: SmtpConfig): Promise<boolean> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api-config.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'smtp_config', value: config })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save",
+        config: {
+          config_key: "smtp_config",
+          config_value: config
+        }
+      })
     });
-    return response.ok;
+
+    const result = await response.json();
+    return result.success === true;
   } catch (e) {
     console.error("Error saving SMTP config", e);
     return false;

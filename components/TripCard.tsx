@@ -442,15 +442,15 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClone, onWebExport, onShare
         {/* Expand Toggle */}
         <button 
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full text-xs font-bold uppercase tracking-wide text-slate-400 hover:text-emerald-600 transition-colors flex items-center justify-center gap-1.5 pb-2"
+            className="w-full text-sm font-bold uppercase tracking-wide text-rose-600 hover:text-rose-700 transition-colors flex items-center justify-center gap-1.5 pb-2"
         >
             {isExpanded ? (
                 <>
-                    <ChevronUp className="w-3.5 h-3.5" /> Close Logistics
+                    <ChevronUp className="w-4 h-4" /> Close Logistics
                 </>
             ) : (
                 <>
-                    <ChevronDown className="w-3.5 h-3.5" /> View Logistics & Itinerary
+                    <ChevronDown className="w-4 h-4" /> View Logistics & Itinerary
                 </>
             )}
         </button>
