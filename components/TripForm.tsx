@@ -22,7 +22,11 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
   const [courses, setCourses] = useState<string>(initialData?.courses?.join(', ') || '');
   const [lodging, setLodging] = useState(initialData?.lodging || '');
-  const [transportType, setTransportType] = useState(initialData?.logistics?.transportType || '');
+  
+  // Default to 'Self Drive'
+  const [transportType, setTransportType] = useState(initialData?.logistics?.transportType || 'Self Drive');
+  
+  const [nights, setNights] = useState<number>(initialData?.nights || 2);
   const [pricePerPerson, setPricePerPerson] = useState<number>(initialData?.pricePerPerson || 0);
   const [vibe, setVibe] = useState<TripRecap['vibe']>(initialData?.vibe || 'Value');
   const [synopsis, setSynopsis] = useState(initialData?.synopsis || '');
@@ -56,11 +60,29 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
       setHighlights(data.highlights?.join('\n') || '');
       
       // Handle new detailed fields
-      if (data.dailyItinerary) setDailyItinerary(data.dailyItinerary);
+      if (data.dailyItinerary) {
+          setDailyItinerary(data.dailyItinerary);
+          
+          // CRITICAL: Prefer the AI-extracted specific 'nights' value first
+          if (data.nights) {
+              setNights(data.nights);
+          } else if (Array.isArray(data.dailyItinerary) && data.dailyItinerary.length > 0) {
+              // Fallback to calculation if AI didn't catch the explicit number
+              const maxDay = Math.max(...data.dailyItinerary.map((i: any) => i.day || 1));
+              setNights(maxDay > 1 ? maxDay - 1 : 1);
+          }
+      }
+      
       if (data.logistics) {
           setLogistics(data.logistics);
-          // specific fields extracted for editing
-          setTransportType(data.logistics.transportType || '');
+          
+          // Normalize transport type capitalization
+          let tType = data.logistics.transportType || 'Self Drive';
+          if (tType.toLowerCase() === 'self drive' || tType.toLowerCase() === 'self-drive') {
+              tType = 'Self Drive';
+          }
+          setTransportType(tType);
+          
           setSpecialRequests(data.logistics.specialRequests?.join('\n') || '');
       }
 
@@ -90,14 +112,17 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
   };
 
   const addItineraryDay = () => {
+    const nextDay = dailyItinerary.length > 0 ? Math.max(...dailyItinerary.map(i => i.day)) + 1 : 1;
     setDailyItinerary([...dailyItinerary, {
-        day: dailyItinerary.length + 1,
+        day: nextDay,
         date: '',
         time: '',
         activity: '',
         location: '',
         notes: ''
     }]);
+    // Auto-increment nights when adding a day
+    setNights(prev => prev + 1);
   };
 
   const removeItineraryDay = (index: number) => {
@@ -116,7 +141,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
       imageUrl,
       courses: courses.split(',').map(s => s.trim()).filter(Boolean),
       lodging,
-      nights: dailyItinerary.length || 3,
+      nights,
       rounds: courses.split(',').length,
       pricePerPerson,
       vibe,
@@ -125,7 +150,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
       highlights: highlights.split('\n').filter(Boolean),
       dailyItinerary: dailyItinerary,
       logistics: {
-          transportType: transportType || 'Unknown',
+          transportType: transportType || 'Self Drive',
           passengerCount: groupSize, // Sync with the main pax input
           specialRequests: specialRequests.split('\n').filter(Boolean)
       }
@@ -179,8 +204,8 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
         <div className="p-6 col-span-2">
             <form onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* Row 1: Basic Info */}
-                <div className="grid grid-cols-4 gap-4">
+                {/* Row 1: Basic Info with Nights */}
+                <div className="grid grid-cols-5 gap-4">
                     <div className="col-span-2">
                         <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Group Name</label>
                         <input type="text" required value={groupName} onChange={e => setGroupName(e.target.value)} className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-slate-900" />
@@ -188,6 +213,10 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
                     <div>
                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Total Pax</label>
                          <input type="number" value={groupSize} onChange={e => setGroupSize(parseInt(e.target.value))} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
+                     </div>
+                     <div>
+                         <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nights</label>
+                         <input type="number" value={nights} onChange={e => setNights(parseInt(e.target.value))} className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
                      </div>
                     <div>
                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Price/Person ($)</label>
@@ -223,7 +252,7 @@ const TripForm: React.FC<TripFormProps> = ({ onSave, onCancel, initialData }) =>
                     </div>
                     <div>
                         <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Transport Type</label>
-                        <input type="text" value={transportType} onChange={e => setTransportType(e.target.value)} placeholder="e.g. 56 Pax Coach" className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
+                        <input type="text" value={transportType} onChange={e => setTransportType(e.target.value)} placeholder="e.g. Self Drive" className="w-full p-2 border border-slate-300 rounded outline-none bg-white text-slate-900" />
                     </div>
                 </div>
 

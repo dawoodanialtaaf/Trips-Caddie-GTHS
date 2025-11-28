@@ -15,6 +15,7 @@ export const parseTripNotes = async (notes: string): Promise<any> => {
     properties: {
       groupName: { type: Type.STRING, description: "Group Name" },
       groupSize: { type: Type.INTEGER, description: "Number of passengers/golfers." },
+      nights: { type: Type.INTEGER, description: "Explicit number of nights for lodging (e.g. if text says '5 nights', return 5)." },
       courses: { 
         type: Type.ARRAY, 
         items: { type: Type.STRING },
