@@ -31,9 +31,10 @@ interface FilterBarProps {
   availableLodgingTypes: string[];
   availableMonths: string[];
   availableYears: number[];
+  availableTripTypes: string[];
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCount, availableRegions, availableVibes, availableLogistics, availableLodgingTypes, availableMonths, availableYears }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCount, availableRegions, availableVibes, availableLogistics, availableLodgingTypes, availableMonths, availableYears, availableTripTypes }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const handleRegionToggle = (region: string) => {
@@ -137,6 +138,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
   const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const sortedMonths = availableMonths.sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
 
+  const tripTypeConfig = [
+    { type: 'golf', label: 'Golf', activeClass: 'bg-white text-emerald-800 shadow-sm ring-1 ring-emerald-100' },
+    { type: 'charter', label: 'Charter/Bus', activeClass: 'bg-white text-blue-800 shadow-sm ring-1 ring-blue-100' }
+  ];
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8 animate-in slide-in-from-top-2">
       <div className="flex flex-col gap-4">
@@ -162,18 +168,18 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, resultCo
                 >
                     All Trips
                 </button>
-                <button 
-                    onClick={() => onFilterChange({...filters, tripType: 'golf'})}
-                    className={`px-4 py-2 rounded-lg transition-all ${filters.tripType === 'golf' ? 'bg-white text-emerald-800 shadow-sm ring-1 ring-emerald-100' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    Golf
-                </button>
-                <button 
-                    onClick={() => onFilterChange({...filters, tripType: 'charter'})}
-                    className={`px-4 py-2 rounded-lg transition-all ${filters.tripType === 'charter' ? 'bg-white text-blue-800 shadow-sm ring-1 ring-blue-100' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    Charter/Bus
-                </button>
+                {tripTypeConfig.map(config => {
+                  if (!availableTripTypes.includes(config.type)) return null;
+                  return (
+                    <button 
+                        key={config.type}
+                        onClick={() => onFilterChange({...filters, tripType: config.type as any})}
+                        className={`px-4 py-2 rounded-lg transition-all ${filters.tripType === config.type ? config.activeClass : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        {config.label}
+                    </button>
+                  );
+                })}
              </div>
              
              {/* Filter Toggle Button */}
