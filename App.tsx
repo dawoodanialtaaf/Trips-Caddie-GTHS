@@ -473,94 +473,107 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Header */}
-      <header className="bg-emerald-900 border-b border-emerald-800 sticky top-0 z-30 shadow-lg text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 grid grid-cols-[1fr_auto_1fr] items-center gap-4 relative">
-          
-          {/* Left: Logo */}
-          <div className="flex items-center justify-start min-w-0">
-            <div className="flex-shrink-0 cursor-pointer group w-fit" onClick={() => setView('gallery')}>
-              <div className="h-16 w-auto flex items-center justify-center transition-all transform group-hover:scale-105">
-                <img 
-                  src="https://golfthehighsierra.com/wp-content/uploads/2025/07/gths_logo-removebg-preview.webp" 
-                  alt="Golf the High Sierra" 
-                  className="w-full h-full object-contain drop-shadow-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Center: Title (Grid Auto) */}
-          <div className="hidden md:flex flex-col items-center justify-center min-w-0 mx-auto px-2">
-            <h1 className="font-extrabold text-2xl tracking-tight leading-none text-white whitespace-nowrap truncate max-w-full">
-              The Caddie <span className="text-emerald-400">Archive</span>
-            </h1>
-            <p className="text-[10px] uppercase tracking-widest text-emerald-300/80 font-bold truncate max-w-full">Golf the High Sierra</p>
-          </div>
-          
-          {/* Right: Actions */}
-          <div className="flex items-center justify-end gap-3 min-w-0">
-            {!isAdmin && (
-              <a
-                href="https://golfthehighsierra.com/contact-custom-golf-package/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm font-medium text-emerald-100 hover:text-white transition-colors hidden xl:block whitespace-nowrap"
-              >
-                Get Custom Quote
-              </a>
-            )}
-            
-            <button 
-              onClick={() => setShowPageShare(true)}
-              className="hidden sm:flex items-center gap-2 text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/10 transition-all backdrop-blur-sm whitespace-nowrap"
-            >
-              <Share2 className="w-3.5 h-3.5" /> Share Page
-            </button>
-
-            {isAdmin ? (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button 
-                  onClick={() => setShowLogsModal(true)}
-                  className="p-2 text-emerald-300 hover:text-white hover:bg-emerald-800/50 rounded-full transition-colors relative"
-                  title="View Request Logs"
-                >
-                  <ClipboardList className="w-5 h-5" />
-                  {requestLogs.length > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-emerald-900"></span>
-                  )}
-                </button>
-                <button 
-                  onClick={() => setShowSettingsModal(true)}
-                  className="p-2 text-emerald-300 hover:text-white hover:bg-emerald-800/50 rounded-full transition-colors"
-                  title="Admin Settings"
-                >
-                  <Settings className="w-5 h-5" />
-                </button>
-                <span className="text-xs font-bold text-emerald-900 bg-emerald-400 px-3 py-1.5 rounded-full shadow-sm whitespace-nowrap hidden sm:inline-block">
-                  Admin Active
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-emerald-300 hover:text-white transition-colors"
-                  title="Logout"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => setShowLoginModal(true)}
-                className="flex items-center gap-2 text-xs font-bold text-emerald-200 hover:text-white transition-colors whitespace-nowrap"
-              >
-                <Lock className="w-3.5 h-3.5" /> Login
-              </button>
-            )}
-          </div>
+<header className="bg-emerald-900 border-b border-emerald-800 sticky top-0 z-30 shadow-lg text-white">
+  <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 grid grid-cols-[1fr_auto_1fr] items-center gap-4 relative">
+    
+    {/* Left: Logo */}
+    <div className="flex items-center justify-start min-w-0">
+      <a 
+        href="https://golfthehighsierra.com?utm_source=caddie_archive&utm_medium=referral&utm_campaign=logo_click" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        onClick={(e) => {
+            e.preventDefault();
+            window.open("https://golfthehighsierra.com?utm_source=caddie_archive&utm_medium=referral&utm_campaign=logo_click", "_blank");
+        }}
+        className="flex-shrink-0 cursor-pointer group w-fit relative z-50 block"
+      >
+        <div className="h-16 w-auto flex items-center justify-center transition-all transform group-hover:scale-105">
+          <img 
+            src="https://golfthehighsierra.com/wp-content/uploads/2025/07/gths_logo-removebg-preview.webp" 
+            alt="Golf the High Sierra" 
+            className="w-full h-full object-contain drop-shadow-sm"
+          />
         </div>
-      </header>
+      </a>
+    </div>
+
+    {/* Center: Title (Grid Auto) */}
+    <div className="hidden md:flex flex-col items-center justify-center min-w-0 mx-auto px-2">
+      <h1 className="font-extrabold text-2xl tracking-tight leading-none text-white whitespace-nowrap truncate max-w-full">
+        The Caddie <span className="text-emerald-400">Archive</span>
+      </h1>
+      <p className="text-[10px] uppercase tracking-widest text-emerald-300/80 font-bold truncate max-w-full">Golf the High Sierra</p>
+    </div>
+    
+    {/* Right: Actions */}
+    <div className="flex items-center justify-end gap-3 min-w-0">
+      {!isAdmin && (
+        
+          <a href="https://golfthehighsierra.com/contact-custom-golf-package/?utm_source=caddie_archive&utm_medium=header_link"
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => {
+              e.preventDefault();
+              window.open("https://golfthehighsierra.com/contact-custom-golf-package/?utm_source=caddie_archive&utm_medium=header_link", "_blank");
+          }}
+          className="text-sm font-medium text-emerald-100 hover:text-white transition-colors hidden sm:block whitespace-nowrap"
+        >
+          Get Custom Quote
+        </a>
+      )}
+      
+      <button 
+        onClick={() => setShowPageShare(true)}
+        className="hidden sm:flex items-center gap-2 text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/10 transition-all backdrop-blur-sm whitespace-nowrap"
+      >
+        <Share2 className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Share Page</span>
+      </button>
+
+      {isAdmin ? (
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button 
+            onClick={() => setShowLogsModal(true)}
+            className="p-2 text-emerald-300 hover:text-white hover:bg-emerald-800/50 rounded-full transition-colors relative"
+            title="View Request Logs"
+          >
+            <ClipboardList className="w-5 h-5" />
+            {requestLogs.length > 0 && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-emerald-900"></span>
+            )}
+          </button>
+          <button 
+            onClick={() => setShowSettingsModal(true)}
+            className="p-2 text-emerald-300 hover:text-white hover:bg-emerald-800/50 rounded-full transition-colors"
+            title="Admin Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <span className="text-xs font-bold text-emerald-900 bg-emerald-400 px-3 py-1.5 rounded-full shadow-sm whitespace-nowrap hidden sm:inline-block">
+            Admin Active
+          </span>
+          <button
+            onClick={handleLogout}
+            className="text-emerald-300 hover:text-white transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      ) : (
+        <button 
+          onClick={() => setShowLoginModal(true)}
+          className="flex items-center gap-2 text-xs font-bold text-emerald-200 hover:text-white transition-colors whitespace-nowrap"
+        >
+          <Lock className="w-3.5 h-3.5" /> Login
+        </button>
+      )}
+    </div>
+  </div>
+</header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
         {view === 'gallery' && (
           <div className="space-y-8">

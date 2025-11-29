@@ -66,9 +66,7 @@ const TripCard: React.FC<TripCardProps> = ({
       trip.vibe
     ).toLowerCase();
 
-    const seed = trip.id
-      .split('')
-      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const seed = trip.id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
 
     const collections = {
       bus: [
@@ -125,7 +123,7 @@ const TripCard: React.FC<TripCardProps> = ({
         'https://images.unsplash.com/photo-1549887534-1541e9326642?auto=format&fit=crop&q=80&w=800'
       ],
       luxury: [
-        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1578683010236-d716f9a3d461?auto=format&fit=crop&q=80&w=800',
         'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=800'
       ]
     };
@@ -176,15 +174,13 @@ const TripCard: React.FC<TripCardProps> = ({
       text.includes('atlantis')
     ) {
       category = 'reno_city';
-    } else if (
-      text.includes('desert') ||
-      text.includes('valley')
-    ) {
+    } else if (text.includes('desert') || text.includes('valley')) {
       category = 'desert';
     }
 
     const set = collections[category];
-    return set[seed % set.length];
+    return set[seed %
+set.length];
   };
 
   useEffect(() => {
@@ -197,10 +193,7 @@ const TripCard: React.FC<TripCardProps> = ({
     );
   };
 
-  const getTrackingLink = (
-    name: string,
-    type: 'course' | 'lodging'
-  ) => {
+  const getTrackingLink = (name: string, type: 'course' | 'lodging') => {
     if (!name) return null;
 
     const clean = name.toLowerCase();
@@ -233,7 +226,7 @@ const TripCard: React.FC<TripCardProps> = ({
   return (
     <div
       className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group/card ${
-        isExpanded ? 'row-span-2' : 'h-[640px]'
+        isExpanded ? 'row-span-2' : 'max-h-[640px]'
       }`}
     >
       <div className="h-40 bg-slate-900 relative shrink-0 overflow-hidden">
@@ -281,7 +274,13 @@ const TripCard: React.FC<TripCardProps> = ({
 
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col bg-white">
         <div className="p-6 pb-2">
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          
+          {/* --------------------------- */}
+          {/* SURGICALLY FIXED STATS ROW */}
+          {/* --------------------------- */}
+          <div className={`grid gap-3 mb-6 ${trip.rounds > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            
+            {/* PAX */}
             <div
               className="flex flex-col items-center justify-center bg-slate-50 border border-slate-100 rounded-xl py-2.5 cursor-help"
               title="Number of Travelers"
@@ -294,6 +293,7 @@ const TripCard: React.FC<TripCardProps> = ({
               </span>
             </div>
 
+            {/* PRICE */}
             <div
               className="flex flex-col items-center justify-center bg-emerald-50/50 border border-emerald-100/50 rounded-xl py-2.5 cursor-help"
               title="Estimated price per person"
@@ -312,6 +312,7 @@ const TripCard: React.FC<TripCardProps> = ({
               </span>
             </div>
 
+            {/* NIGHTS */}
             <div
               className="flex flex-col items-center justify-center bg-slate-50 border border-slate-100 rounded-xl py-2.5 cursor-help"
               title="Total Nights"
@@ -326,7 +327,26 @@ const TripCard: React.FC<TripCardProps> = ({
                   : (trip.dailyItinerary?.length || 1) - 1}
               </span>
             </div>
+
+            {/* ROUNDS — ONLY WHEN > 0 */}
+            {trip.rounds > 0 && (
+              <div
+                className="flex flex-col items-center justify-center bg-slate-50 border border-slate-100 rounded-xl py-2.5 cursor-help"
+                title="Total Rounds Played"
+              >
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">
+                  Rounds
+                </span>
+                <span className="text-lg font-bold text-slate-800">
+                  {trip.rounds}
+                </span>
+              </div>
+            )}
+
           </div>
+          {/* --------------------------- */}
+          {/* END SURGICAL FIX            */}
+          {/* --------------------------- */}
 
           <div className="mb-6">
             <p className="text-sm text-slate-600 italic border-l-[3px] border-emerald-500 pl-4 py-1">
@@ -382,7 +402,8 @@ const TripCard: React.FC<TripCardProps> = ({
                     href={lodgingLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all gap-1"
+                    className="inline-flex items-center bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-300 hover:shadow-md transition-
+all gap-1"
                   >
                     {trip.lodging}
                     <ArrowUpRight className="w-2.5 h-2.5 opacity-30" />
@@ -397,7 +418,8 @@ const TripCard: React.FC<TripCardProps> = ({
           </div>
 
           {trip.highlights && trip.highlights.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-
+6">
               <div className="flex items-center text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2.5">
                 <Zap className="w-3 h-3 mr-1 text-amber-500" /> Highlights
               </div>
@@ -627,7 +649,8 @@ const TripCard: React.FC<TripCardProps> = ({
         <div className="grid grid-cols-6 gap-3">
           <button
             onClick={() => onClone(trip)}
-            className={`py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wide transition-all duration-300 shadow-md shadow-emerald-200 hover:shadow-lg flex items-center justify-center gap-2 transform active:scale-[0.98] ${
+            className={`py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-
+xl text-xs font-extrabold uppercase tracking-wide transition-all duration-300 shadow-md shadow-emerald-200 hover:shadow-lg flex items-center justify-center gap-2 transform active:scale-[0.98] ${
               isAdmin ? 'col-span-3' : 'col-span-5'
             }`}
           >
@@ -647,7 +670,8 @@ const TripCard: React.FC<TripCardProps> = ({
             <>
               <button
                 onClick={() => onEdit(trip)}
-                className="col-span-1 py-3 bg-white hover:bg-amber-50 text-slate-400 hover:text-amber-600 border border-slate-200 hover:border-amber-200 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm"
+                className="col-span-1 py-3 bg-white hover:bg-amber-
+50 text-slate-400 hover:text-amber-600 border border-slate-200 hover:border-amber-200 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm"
                 title="Edit Trip"
               >
                 <Edit className="w-4 h-4" />
